@@ -1,98 +1,91 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>BDRRMC Self-Assessment</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-    }
-    input, select {
-      width: 100%;
-      margin-bottom: 15px;
-      padding: 8px;
-    }
-    button {
-      padding: 10px 20px;
-      margin-right: 10px;
-    }
-    #result {
-      margin-top: 20px;
-      padding: 15px;
-      background-color: #f2f2f2;
-      border: 1px solid #ccc;
-    }
-  </style>
-</head>
-<body>
-  <h2>BDRRMC Self-Assessment</h2>
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 10px;">
+  <h2>Barangay DRRM Self-Assessment Tool</h2>
+  <label>Municipality:<br><input type="text" id="municipality" style="width:100%"></label><br><br>
+  <label>Barangay:<br><input type="text" id="barangay" style="width:100%"></label><br><br>
 
-  <label>Municipality:</label>
-  <input type="text" id="municipality">
+  <h3>2.1 BDRRMC Assessment</h3>
 
-  <label>Barangay:</label>
-  <input type="text" id="barangay">
+  <label>2.1.1 Structure<br>
+    <small>With Organized BDRRMC with composition compliant to NDRRMC, DILG, DBM, and CSC JMC No. 2014-01</small><br>
+    <select id="structure">
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+  </label><br><br>
 
-  <label>2.1.1 Structure (Yes/No):</label>
-  <select id="structure">
-    <option value="yes">Yes</option>
-    <option value="no">No</option>
-  </select>
+  <label>2.1.2 Plan<br>
+    <small>Approved BDRRM Plan covering CY 2023, adopted by Sangguniang Barangay</small><br>
+    <select id="plan">
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+  </label><br><br>
 
-  <label>2.1.2 Plan (Yes/No):</label>
-  <select id="plan">
-    <option value="yes">Yes</option>
-    <option value="no">No</option>
-  </select>
+  <label>2.1.3 Budget<br>
+    <small>Percentage allocation for BDRRMF</small><br>
+    Estimated Revenue From Regular Sources:<br>
+    <input type="number" id="revenue" style="width:100%"><br><br>
+    Amount BDRRMF for FY 2024:<br>
+    <input type="number" id="budget" style="width:100%"><br><br>
+  </label>
 
-  <label>Estimated Revenue From Regular Sources:</label>
-  <input type="number" id="revenue">
+  <button onclick="evaluate()" style="padding:10px 20px; background:#28a745; color:#fff; border:none; border-radius:5px;">Evaluate</button>
+  <button onclick="savePDF()" style="padding:10px 20px; background:#007bff; color:#fff; border:none; border-radius:5px; margin-left:10px;">Save as PDF</button>
+  <button onclick="resetForm()" style="padding:10px 20px; background:#dc3545; color:#fff; border:none; border-radius:5px; margin-left:10px;">Restart</button>
 
-  <label>BDRRMF for FY 2024:</label>
-  <input type="number" id="budget">
+  <div id="evaluationResult" style="margin-top: 30px;"></div>
+</div>
 
-  <button onclick="evaluate()">Evaluate</button>
+<!-- PDF Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <div id="result"></div>
+<script>
+function evaluate() {
+  const municipality = document.getElementById("municipality").value.trim();
+  const barangay = document.getElementById("barangay").value.trim();
+  const structure = document.getElementById("structure").value;
+  const plan = document.getElementById("plan").value;
+  const revenue = parseFloat(document.getElementById("revenue").value);
+  const budget = parseFloat(document.getElementById("budget").value);
 
-  <script>
-    function evaluate() {
-      const municipality = document.getElementById('municipality').value;
-      const barangay = document.getElementById('barangay').value;
-      const structure = document.getElementById('structure').value;
-      const plan = document.getElementById('plan').value;
-      const revenue = parseFloat(document.getElementById('revenue').value);
-      const budget = parseFloat(document.getElementById('budget').value);
+  let resStructure = structure === "yes" ? "Passed" : "Failed";
+  let resPlan = plan === "yes" ? "Passed" : "Failed";
+  let resBudget = (revenue > 0 && (budget / revenue) * 100 >= 5) ? "Passed" : "Failed";
+  let percent = (revenue > 0) ? ((budget / revenue) * 100).toFixed(2) : "0.00";
 
-      let score = 0;
-      if (structure === 'yes') score++;
-      if (plan === 'yes') score++;
+  let overall = (resStructure === "Passed" && resPlan === "Passed" && resBudget === "Passed") ? "PASSED" : "FAILED";
 
-      let remarks = '';
-      if (score === 2) {
-        remarks = 'Fully Compliant';
-      } else if (score === 1) {
-        remarks = 'Partially Compliant';
-      } else {
-        remarks = 'Not Compliant';
-      }
+  const resultHTML = `
+    <div id="pdfResult" style="padding:20px; border:1px solid #ccc; border-radius:10px;">
+      <h3>Assessment Result</h3>
+      <p><strong>Municipality:</strong> ${municipality || "N/A"}</p>
+      <p><strong>Barangay:</strong> ${barangay || "N/A"}</p>
+      <p><strong>2.1.1 Structure:</strong> ${resStructure}</p>
+      <p><strong>2.1.2 Plan:</strong> ${resPlan}</p>
+      <p><strong>2.1.3 Budget:</strong> ${resBudget} (${percent}%)</p>
+      <h3 style="color:${overall === "PASSED" ? "green" : "red"};">OVERALL: ${overall}</h3>
+    </div>
+  `;
 
-      const result = `
-        <h3>Assessment Result</h3>
-        <strong>Municipality:</strong> ${municipality}<br>
-        <strong>Barangay:</strong> ${barangay}<br>
-        <strong>Structure:</strong> ${structure}<br>
-        <strong>Plan:</strong> ${plan}<br>
-        <strong>Revenue:</strong> ₱${revenue.toLocaleString()}<br>
-        <strong>BDRRMF 2024:</strong> ₱${budget.toLocaleString()}<br>
-        <strong>Compliance Level:</strong> ${remarks}
-      `;
+  document.getElementById("evaluationResult").innerHTML = resultHTML;
+}
 
-      document.getElementById('result').innerHTML = result;
-    }
-  </script>
-</body>
-</html>
+function savePDF() {
+  const element = document.getElementById('pdfResult');
+  if (!element) {
+    alert("Please evaluate the form first.");
+    return;
+  }
+  html2pdf().from(element).save("BDRRMC_Assessment_Result.pdf");
+}
+
+function resetForm() {
+  document.getElementById("municipality").value = "";
+  document.getElementById("barangay").value = "";
+  document.getElementById("structure").value = "yes";
+  document.getElementById("plan").value = "yes";
+  document.getElementById("revenue").value = "";
+  document.getElementById("budget").value = "";
+  document.getElementById("evaluationResult").innerHTML = "";
+}
+</script>
